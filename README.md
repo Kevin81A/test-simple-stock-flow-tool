@@ -1,77 +1,77 @@
-# Simple Stock Flow · Herramienta de Demostración y Sembrado (CLI)
+# Simple Stock Flow · Seeder & Demo CLI Tool
 
-> **Prueba técnica SDD · Ficha ADSO 3413974**  
-> Utilidad de línea de comandos en Python para sembrado de datos de prueba sobre la API pública (Tarea T-24).
-
----
-
-## 1. ¿Qué es este repositorio y qué rol cumple en Simple Stock Flow?
-
-Este repositorio contiene la **herramienta de sembrado y utilidades** (`ssf_tool`) de *Simple Stock Flow*.
-Cumple el rol de automatizar la carga de datos de demostración (categorías, productos, imágenes reales y transacciones de venta) para que evaluadores y desarrolladores puedan ver el sistema operando con datos realistas de inmediato.
-
-**Invariantes de diseño (Tarea T-24):**
-- **Cero acceso a Base de Datos:** No incluye dependencias como `sqlalchemy` ni `pymysql`. No ejecuta DDL ni SQL directo.
-- **Uso exclusivo de la API pública:** Toda la información se crea mediante los endpoints REST (`/api/auth/login`, `/api/products`, `/api/products/{id}/image`, `/api/sales`).
-- **Idempotencia:** Si se ejecuta múltiples veces consecutivas, detecta los productos ya existentes y no genera duplicados ni errores.
+> **SDD Technical Assessment · SENA ADSO Class 3413974**  
+> Python command-line utility for seeding demo test data via the public REST API (Task T-24).
 
 ---
 
-## 2. ¿Cómo se ejecuta localmente?
+## 1. What is this repository and what role does it play in Simple Stock Flow?
 
-### Con Docker (Recomendado si no tiene Python local)
+This repository contains the **demo seeder and utility CLI** (`ssf_tool`) for *Simple Stock Flow*.
+Its role is to automate loading realistic demonstration data (categories, products, real image uploads, and sales transactions) so evaluators and developers can immediately observe the running system with rich data.
+
+**Design invariants (Task T-24):**
+- **Zero Database Access:** Contains no dependencies on `sqlalchemy` or `pymysql`. Executes no direct DDL or SQL queries.
+- **Exclusively Uses Public API:** All data is created through public REST endpoints (`/api/auth/login`, `/api/products`, `/api/products/{id}/image`, `/api/sales`).
+- **Idempotency:** When executed multiple times consecutively, detects existing products by name and generates neither duplicates nor errors.
+
+---
+
+## 2. How to run it locally?
+
+### With Docker (Recommended if Python is not installed locally)
 ```bash
-# 1. Construir la imagen del sembrador
+# 1. Build the seeder image
 docker build -t ssf-tool .
 
-# 2. Ejecutar el sembrado contra el stack levantado
+# 2. Run the seeding process against the running stack
 docker run --rm --network host -e API_BASE_URL="http://localhost:8000" ssf-tool seed
 ```
 
-### Sin Docker (Con Python 3.10+ y entorno virtual)
+### Without Docker (Python 3.10+ and virtual environment)
 ```bash
-# 1. Crear y activar entorno virtual
+# 1. Create and activate virtual environment
 python -m venv .venv
-# En Windows:
+# On Windows:
 .venv\Scripts\activate
-# En Linux/macOS:
+# On Linux/macOS:
 source .venv/bin/activate
 
-# 2. Instalar dependencias
+# 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Ejecutar el comando seed
+# 3. Run the seed command
 python -m ssf_tool seed --url http://localhost:8000 --username admin --password "Admin12345!"
 ```
 
 ---
 
-## 3. Variables de entorno requeridas
+## 3. Required Environment Variables
 
-El comando `seed` lee los siguientes valores de configuración (con valores por defecto si no se especifican):
+The `seed` command reads the following configuration variables (with defaults if omitted):
 
-| Variable | Descripción | Valor por Defecto |
+| Variable | Description | Default Value |
 |---|---|---|
-| `API_BASE_URL` | URL base del servicio backend | `http://localhost:8000` |
-| `ADMIN_USERNAME` | Usuario administrador para autenticación | `admin` |
-| `ADMIN_PASSWORD` | Contraseña del administrador | `Admin12345!` |
+| `API_BASE_URL` | Backend service base URL | `http://localhost:8000` |
+| `ADMIN_USERNAME` | Administrator username for authentication | `admin` |
+| `ADMIN_PASSWORD` | Administrator password | `Admin12345!` |
 
 ---
 
-## 4. ¿Cómo se ejecutan las pruebas?
+## 4. How are tests executed?
 
 ```bash
-# Ejecutar las pruebas unitarias con mock de red
+# Run unit tests with network mocks
 python -m unittest discover tests/
 ```
 
 ---
 
-## 5. Decisiones técnicas relevantes tomadas durante la implementación
+## 5. Relevant Technical Decisions Taken During Implementation
 
-1. **Aislamiento Estricto de Infraestructura (ADR-001):**
-   - El sembrador vive fuera de `test-simple-stock-flow-infra` para que la infraestructura se mantenga 100% contenida y no exija la instalación previa de Python en el host evaluador.
-2. **Sembrado Idempotente Basado en Consulta de Catálogo:**
-   - Antes de enviar un `POST /api/products`, el cliente consulta el catálogo actual mediante `GET /api/products`. Si el producto ya existe por nombre, reutiliza su identificador único para asociar ventas, evitando colisiones de clave única o errores de duplicidad.
-3. **Manejo Multipart Real para Imágenes:**
-   - La herramienta genera y sube imágenes binarias reales (JPEG y PNG) a través de `multipart/form-data` respetando el límite de 5 MB y tipos MIME permitidos por la API.
+1. **Strict Infrastructure Isolation (ADR-001):**
+   - The seeder lives outside `test-simple-stock-flow-infra` so the infrastructure remains 100% self-contained and does not mandate host-level Python installations.
+2. **Idempotent Seeding Based on Catalog Inspection:**
+   - Before dispatching `POST /api/products`, the client inspects existing catalog records via `GET /api/products`. If a product already exists by name, it reuses its ID for sales association, avoiding unique constraint violations or duplicate entries.
+3. **Real Multipart Handling for Images:**
+   - Generates and uploads genuine binary image assets (JPEG and PNG) via `multipart/form-data`, strictly respecting the 5 MB limit and allowed MIME types.
