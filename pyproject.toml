@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ssf-tool"
+version = "1.0.0"
+description = "Herramienta CLI de demostración y sembrado de Simple Stock Flow"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31.0",
+]
+
+[project.scripts]
+ssf-tool = "ssf_tool.cli:main"
